@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sale System</title>
+
+<style>
+body{
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg,#6dd5ed,#2193b0);
+    margin:0;
+    padding:15px;
+}
+.container{
+    background:#fff;
+    max-width:900px;
+    margin:auto;
+    padding:20px;
+    border-radius:15px;
+    box-shadow:0 5px 15px rgba(0,0,0,.2);
+}
+h2{text-align:center;}
+
+.form-group{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-bottom:10px;
+}
+.form-group input,
+.form-group select{
+    flex:1;
+    min-width:120px;
+    padding:10px;
+    border-radius:8px;
+    border:1px solid #ccc;
+    font-size:16px;
+}
+
+/* Qty control */
+.qty-box{
+    display:flex;
+    align-items:center;
+    gap:5px;
+}
+.qty-box button{
+    width:40px;
+    height:40px;
+    border:none;
+    border-radius:8px;
+    font-size:20px;
+    background:#2193b0;
+    color:white;
+    cursor:pointer;
+}
+.qty-box button:hover{background:#17687e;}
+.qty-box input{
+    width:70px;
+    text-align:center;
+}
+
+.main-btn{
+    width:100%;
+    padding:12px;
+    background:#2193b0;
+    color:white;
+    border:none;
+    border-radius:8px;
+    font-size:16px;
+    cursor:pointer;
+}
+.main-btn:hover{background:#17687e;}
+
+table{
+    width:100%;
+    margin-top:20px;
+    border-collapse:collapse;
+    min-width:600px;
+}
+th,td{
+    border:1px solid #ddd;
+    padding:8px;
+    text-align:center;
+}
+th{
+    background:#2193b0;
+    color:white;
+}
+
+.action-btn{
+    padding:4px 8px;
+    border:none;
+    border-radius:5px;
+    color:white;
+    cursor:pointer;
+}
+.edit-btn{background:#f39c12;}
+.delete-btn{background:#e74c3c;}
+
+.total{
+    margin-top:15px;
+    font-size:18px;
+    font-weight:bold;
+    text-align:right;
+    color:green;
+}
+
+@media(max-width:600px){
+    .form-group{flex-direction:column;}
+    .qty-box{justify-content:center;}
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+<h2>🛒 ប្រព័ន្ធគណនាលក់</h2>
+
+<!-- Preset items -->
+<div class="form-group">
+<select id="preset" onchange="selectItem()">
+    <option value="">-- ជ្រើសរើសមុខទំនិញ --</option>
+    <option value="ស្រា​មួយកំប៉ុង|3000">ស្រា​មួយកំប៉ុង - 3000៛</option>
+    <option value="សាច់គោ|10000">សាច់គោ - 10000៛</option>
+    <option value="សាច់គោ|15000">សាច់គោ - 15000៛</option>
+    <option value="សាច់គោ|20000">សាច់គោ - 20000៛</option>
+    <option value="សាច់គោ|25000">សាច់គោ - 25000៛</option>
+    <option value="ដូរក្រវិល|1000">ដូរក្រវិល - 1000៛</option>
+    <option value="ស្រា​មួយយួរ|16000">ស្រា​មួយយួរ - 16000៛</option>
+</select>
+</div>
+
+<div class="form-group">
+    <input type="text" id="name" placeholder="ឈ្មោះទំនិញ">
+
+    <!-- Qty with + / - -->
+    <div class="qty-box">
+        <button type="button" onclick="changeQty(-1)">➖</button>
+        <input type="number" id="qty" value="1" min="0">
+        <button type="button" onclick="changeQty(1)">➕</button>
+    </div>
+
+    <input type="number" id="price" placeholder="តម្លៃ (រៀល)">
+</div>
+
+<button class="main-btn" onclick="addItem()">បន្ថែម</button>
+
+<table>
+<thead>
+<tr>
+    <th>ល.រ</th>
+    <th>ឈ្មោះ</th>
+    <th>ចំនួន</th>
+    <th>តម្លៃ</th>
+    <th>សរុប</th>
+    <th>ចាត់ការ</th>
+</tr>
+</thead>
+<tbody id="tableBody"></tbody>
+</table>
+
+<div class="total" id="grandTotal">តម្លៃសរុបទាំងអស់: 0 ៛</div>
+</div>
+
+<script>
+let items = [];
+let idCounter = 0;
+
+const nameInput = document.getElementById("name");
+const qtyInput = document.getElementById("qty");
+const priceInput = document.getElementById("price");
+const tableBody = document.getElementById("tableBody");
+const grandTotal = document.getElementById("grandTotal");
+
+/* prevent negative typing */
+qtyInput.addEventListener("input", ()=>{
+    if(qtyInput.value < 0) qtyInput.value = 0;
+});
+
+/* + / - qty */
+function changeQty(val){
+    let q = parseInt(qtyInput.value) || 0;
+    q += val;
+    if(q < 0) q = 0;
+    qtyInput.value = q;
+}
+
+/* preset select */
+function selectItem(){
+    let val = document.getElementById("preset").value;
+    if(!val) return;
+    let [name, price] = val.split("|");
+    nameInput.value = name;
+    priceInput.value = price;
+}
+
+/* add item */
+function addItem(){
+    let name = nameInput.value.trim();
+    let qty = parseInt(qtyInput.value);
+    let price = parseInt(priceInput.value);
+
+    if(!name || isNaN(qty) || isNaN(price)){
+        alert("សូមបញ្ចូលព័ត៌មាន!");
+        return;
+    }
+
+    if(qty <= 0){
+        alert("ចំនួនត្រូវធំជាង 0");
+        return;
+    }
+
+    items.push({
+        id: ++idCounter,
+        name,
+        qty,
+        price,
+        total: qty * price
+    });
+
+    render();
+    nameInput.value="";
+    priceInput.value="";
+    qtyInput.value=1;
+}
+
+/* render table */
+function render(){
+    tableBody.innerHTML="";
+    let sum = 0;
+
+    items.forEach((it,i)=>{
+        sum += it.total;
+        tableBody.innerHTML += `
+        <tr>
+            <td>${i+1}</td>
+            <td>${it.name}</td>
+            <td>${it.qty}</td>
+            <td>${it.price}៛</td>
+            <td>${it.total}៛</td>
+            <td>
+                <button class="action-btn edit-btn" onclick="editItem(${it.id})">Edit</button>
+                <button class="action-btn delete-btn" onclick="deleteItem(${it.id})">Delete</button>
+            </td>
+        </tr>`;
+    });
+
+    grandTotal.innerText = "តម្លៃសរុបទាំងអស់: " + sum + " ៛";
+}
+
+/* delete */
+function deleteItem(id){
+    items = items.filter(i=>i.id!==id);
+    render();
+}
+
+/* edit */
+function editItem(id){
+    let it = items.find(i=>i.id===id);
+    nameInput.value = it.name;
+    qtyInput.value = it.qty;
+    priceInput.value = it.price;
+    deleteItem(id);
+}
+</script>
+
+</body>
+</html>
